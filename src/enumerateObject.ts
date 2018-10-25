@@ -124,6 +124,18 @@ module powerbi.extensibility.visual {
 
                     break;
                 }
+                case "constantLine": {
+                    if (!settings.constantLine.dataLabelShow) {
+                        delete instance.properties["fontColor"];
+                        delete instance.properties["text"];
+                        delete instance.properties["horizontalPosition"];
+                        delete instance.properties["verticalPosition"];
+                        delete instance.properties["displayUnits"];
+                        delete instance.properties["precision"];
+                    }
+
+                    break;
+                }
             }
         }
     }
