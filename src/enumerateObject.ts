@@ -48,6 +48,13 @@ module powerbi.extensibility.visual {
             let instance: VisualObjectInstance = instances[0];
 
             switch (instance.objectName) {
+                case "legend": {
+                    if (visualData && visualData.legendData && visualData.legendData.dataPoints && visualData.legendData.dataPoints.length) { 
+                        break;
+                    } else if (visualData && visualData.dataPoints && settings.dataPoint.showAllDataPoints) {
+                        instance = null;
+                    }
+                }
                 case "dataPoint": {
                     if (visualData && visualData.legendData && visualData.legendData.dataPoints && visualData.legendData.dataPoints.length) {
                         this.fillDataPointInstancesForLegend(visualData, instances);
@@ -102,6 +109,7 @@ module powerbi.extensibility.visual {
                         delete instance.properties["axisType"];
                         delete instance.properties["axisScale"];
                         delete instance.properties["axisStyle"];
+                        delete instance.properties["precision"];
                         delete instance.properties["start"];
                         delete instance.properties["end"];
                     }
@@ -123,6 +131,29 @@ module powerbi.extensibility.visual {
                     }
 
                     break;
+                }
+                case "constantLine": {
+                    if (!settings.constantLine.dataLabelShow) {
+                        delete instance.properties["fontColor"];
+                        delete instance.properties["text"];
+                        delete instance.properties["horizontalPosition"];
+                        delete instance.properties["verticalPosition"];
+                        delete instance.properties["displayUnits"];
+                        delete instance.properties["precision"];
+                    }
+
+                    break;
+                }
+                case "smallMultiple": {
+                    if (settings.smallMultiple.layoutMode === LayoutMode.Matrix) {
+                        delete instance.properties["maxRowWidth"];
+                    }
+
+                    if (!settings.smallMultiple.showChartTitle) {
+                        delete instance.properties["fontFamily"];
+                        delete instance.properties["fontSize"];
+                        delete instance.properties["fontColor"];
+                    }
                 }
             }
         }

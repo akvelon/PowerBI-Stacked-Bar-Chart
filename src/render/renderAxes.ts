@@ -10,7 +10,6 @@ module powerbi.extensibility.visual {
     import valueType = powerbi.extensibility.utils.type.ValueType;
     import textMeasurementService = powerbi.extensibility.utils.formatting.textMeasurementService;
     import TextProperties = powerbi.extensibility.utils.formatting.TextProperties;
-    import AxisHelper = powerbi.extensibility.utils.chart.axis;
 
     module Selectors {
         export const AxisLabelSelector = CssConstants.createClassAndSelector("axisLabel");
@@ -30,7 +29,7 @@ module powerbi.extensibility.visual {
             metadata: VisualMeasureMetadata,
             settings: VisualSettings,
             host: IVisualHost,
-            barHeight: number,
+            barHeight: number = null,
             maxYLabelsWidth = null): IAxes {
 
             let xAxisProperties: axis.IAxisProperties = null;
@@ -60,6 +59,7 @@ module powerbi.extensibility.visual {
                 scaleType: valueAxisScale,
                 useTickIntervalForDisplayUnits: true,
                 axisDisplayUnits: settings.valueAxis.displayUnits,
+                disableNice: settings.valueAxis.start != null || settings.valueAxis.end != null,
                 axisPrecision: xAxisPrecision
             });
 
@@ -113,6 +113,7 @@ module powerbi.extensibility.visual {
                 isVertical: true,
                 isCategoryAxis: true,
                 useTickIntervalForDisplayUnits: true,
+                disableNice: axisType === "continuous" && (settings.categoryAxis.start != null || settings.categoryAxis.end != null),
                 getValueFn: (index: number, dataType: valueType): any => {
 
                     if (dataType.dateTime && dateColumnFormatter) {
@@ -133,7 +134,7 @@ module powerbi.extensibility.visual {
 
                         let formattedString: string = dateColumnFormatter.format(new Date(index).toLocaleString("en-US", options));
 
-                        if (maxYLabelsWidth) {
+                        if (maxYLabelsWidth && axisType !== "continuous") {
 
                             let textProperties: TextProperties = {
                                 text: formattedString,
@@ -147,7 +148,7 @@ module powerbi.extensibility.visual {
                         return formattedString;
                     }
 
-                    if (maxYLabelsWidth) {
+                    if (maxYLabelsWidth && axisType !== "continuous") {
 
                         let textProperties: TextProperties = {
                             text: index.toString(),
@@ -304,8 +305,9 @@ module powerbi.extensibility.visual {
 
                     textSelectionX.attr({
                         "transform": svg.translate(
-                            (width + margin.left) / RenderAxes.AxisLabelOffset,
-                            (height + visualSize.height + xFontSize + margin.top) / 2)
+                            (width) / RenderAxes.AxisLabelOffset,
+                            (height + visualSize.height + xFontSize + margin.top) / 2),
+                        "dy": '.8em'
                     });
 
                     if (showXAxisTitle && xTitle && xTitle.toString().length > 0) {
@@ -332,7 +334,7 @@ module powerbi.extensibility.visual {
                             ? width - margin.right - yFontSize
                             : 0,
                         "x": -((visualSize.height + margin.top + margin.bottom) / RenderAxes.AxisLabelOffset),
-                        "dy": RenderAxes.DefaultDY
+                        "dy": (showY1OnRight ? '-' : '') + RenderAxes.DefaultDY
                     });
 
                     if (showYAxisTitle && yTitle && yTitle.toString().length > 0) {
@@ -376,12 +378,33 @@ module powerbi.extensibility.visual {
                 let dataDomainMinY: number = d3.min(visibleDatapoints, d => <number>d.category);
                 let dataDomainMaxY: number = d3.max(visibleDatapoints, d => <number>d.category);
 
-                dataDomainY = [dataDomainMinY, dataDomainMaxY];
+                let start = settings.categoryAxis.start;
+                let end = settings.categoryAxis.end;
+
+                dataDomainY = [start != null ? settings.categoryAxis.start : dataDomainMinY, end != null ? end : dataDomainMaxY];
+            }
+
+            let constantLineValue: number = settings.constantLine.value;
+
+            if (constantLineValue || constantLineValue === 0) {
+                dataDomainMinX = dataDomainMinX > constantLineValue ? constantLineValue : dataDomainMinX;
+                dataDomainMaxX = dataDomainMaxX < constantLineValue ? constantLineValue : dataDomainMaxX;
+            }
+
+            let start = settings.valueAxis.start;
+            let end = settings.valueAxis.end;
+
+            if (start != null){
+                dataDomainMinX = start;
+            }
+
+            if ( settings.valueAxis.axisScale === 'log' && dataDomainMinX === 0 ){
+                dataDomainMinX = 1;
             }
 
             return {
                 yAxisDomain: dataDomainY,
-                xAxisDomain: [dataDomainMinX, dataDomainMaxX]
+                xAxisDomain: [dataDomainMinX, end != null ? end : dataDomainMaxX]
             };
         }
     }

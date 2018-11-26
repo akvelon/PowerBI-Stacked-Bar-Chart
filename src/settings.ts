@@ -35,10 +35,12 @@ module powerbi.extensibility.visual {
       selection: []
     };
     public dataPoint: dataPointSettings = new dataPointSettings();
+    public smallMultiple: smallMultipleSettings = new smallMultipleSettings();
     public legend: legendSettings = new legendSettings();
     public categoryAxis: categoryAxisSettings = new categoryAxisSettings();
     public valueAxis: valueAxisSettings = new valueAxisSettings();
     public categoryLabels: categoryLabelsSettings = new categoryLabelsSettings();
+    public constantLine: constantLineSettings = new constantLineSettings();
   }
 
   export enum LabelPosition {
@@ -47,6 +49,38 @@ module powerbi.extensibility.visual {
     OutsideEnd = <any>"outside",
     InsideBase = <any>"base",
     InsideCenter = <any>"center"
+  }
+
+  export enum LineStyle {
+    Dashed = <any>"dashed",
+    Solid = <any>"solid",
+    Dotted = <any>"dotted"
+  }
+
+  export enum Position {
+    Behind = <any>"behind",
+    InFront = <any>"front"
+  }
+
+  export enum Text {
+    Name = <any>"name",
+    Value = <any>"value",
+    NameAndValue = <any>"nameAndValue"
+  }
+
+  export enum HorizontalPosition {
+    Left = <any>"left",
+    Right = <any>"right"
+  }
+
+  export enum VerticalPosition {
+    Top = <any>"top",
+    Bottom = <any>"bottom"
+  }
+
+  export enum LayoutMode {
+    Flow = <any>"flow",
+    Matrix = <any>"matrix"
   }
 
   // tslint:disable-next-line:class-name
@@ -115,6 +149,10 @@ module powerbi.extensibility.visual {
     public show: boolean = true;
     // Axis Scale type
     public axisScale: string = "linear";
+    // Axis start
+    public start: number = null;
+    // Axis end
+    public end: number = null;
     // Axis color
     public axisColor: string = "";
     // Axis Font Size
@@ -166,5 +204,33 @@ module powerbi.extensibility.visual {
     public transparency: number = 90;
     // Show Background transparency
     public backgroundColor: string = "";
+  }
+  export class constantLineSettings {
+    public show: boolean = false;
+    public name: string = "";
+    public value: number = 0;
+    public lineColor: string = "#01b8aa";
+    public transparency: number = 90;
+    public lineStyle: LineStyle = LineStyle.Dotted;
+    public position: Position = Position.Behind;
+    public dataLabelShow: boolean = false;    
+    public fontColor: string = "#01b8aa";
+    public text: Text = Text.Name;
+    public horizontalPosition: HorizontalPosition = HorizontalPosition.Left;
+    public verticalPosition: VerticalPosition = VerticalPosition.Top;
+    public displayUnits: number = 0;
+    public precision: number = null;
+  }
+  export class smallMultipleSettings {
+    public layoutMode: LayoutMode = LayoutMode.Flow;
+    public minUnitWidth: number = 150;
+    public minUnitHeight: number = 120;
+    public maxRowWidth: number = 4;
+    public showChartTitle: boolean = true;
+    public textcolor: string = "#000000";
+    public fontFamily: string = DefaultFontFamily;
+    public fontSize: number = 9;
+    public fontColor: string = "#000000";
+    public showSeparators: boolean = true;
   }
 }

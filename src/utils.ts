@@ -6,39 +6,52 @@ module powerbi.extensibility.visual.visualUtils {
 
     const DisplayUnitValue: number = 1;
 
-    export function calculateBarCoordianates(data: VisualData, settings: VisualSettings, barHeight: number): void {
+    export function calculateBarCoordianatesByData(data: VisualData, settings: VisualSettings, barHeight: number): void {
+        let dataPoints: VisualDataPoint[] = data.dataPoints;
+        let axes: IAxes = data.axes;
+
+        this.calculateBarCoordianates(dataPoints, axes, settings, barHeight);
+    }
+
+    export function calculateBarCoordianates(dataPoints: VisualDataPoint[], axes: IAxes, settings: VisualSettings, barHeight: number): void {
         let isCategoricalAxisType: boolean = settings.categoryAxis.axisType === "categorical";
 
-        data.dataPoints.forEach(point => {
+        dataPoints.forEach(point => {
             let height, width, x, y: number;
 
-            if (data.axes.yIsScalar && !isCategoricalAxisType) {
-                height = barHeight < 0 ? 0 : barHeight;
+            if (axes.yIsScalar && !isCategoricalAxisType) {
+                let start = settings.categoryAxis.start;
+
+                height = start != null && start > point.category || barHeight < 0 ? 0 : barHeight;
             } else {
-                height = data.axes.y.scale.rangeBand();
+                height = axes.y.scale.rangeBand();
             }
 
-            if (point.shiftValue) {
-                x = data.axes.x.scale(point.shiftValue);
+            let xValue = point.shiftValue < axes.x.dataDomain[0] ? axes.x.dataDomain[0] : point.shiftValue;
+            if (xValue) {
+                x = axes.x.scale(xValue);
             } else {
                 let xValue = 0;
-                if (data.axes.x.dataDomain[0] > 0) {
-                    xValue = data.axes.x.dataDomain[0];
+                if (axes.x.dataDomain[0] > 0) {
+                    xValue = axes.x.dataDomain[0];
                 }
-                x = data.axes.x.scale(xValue);
+                x = axes.x.scale(xValue);
             }
 
             let widthValue: number = point.valueForWidth as number;
-            if (data.axes.x.scale(widthValue + point.shiftValue) < 0) {
+            if (axes.x.scale(widthValue + point.shiftValue) < 0) {
                 width = 1;
             } else {
-                width = data.axes.x.scale(widthValue + point.shiftValue) - x;
+                let end = settings.valueAxis.end;
+                let valueToScale = widthValue + point.shiftValue;
+
+                width = axes.x.scale(end != null && valueToScale > end ? end : valueToScale) - axes.x.scale(xValue);
             }
 
-            if (data.axes.yIsScalar && !isCategoricalAxisType) {
-                y = data.axes.y.scale(point.category) - barHeight / 2;
+            if (axes.yIsScalar && !isCategoricalAxisType) {
+                y = axes.y.scale(point.category) - barHeight / 2;
             } else {
-                y = data.axes.y.scale(point.category);
+                y = axes.y.scale(point.category);
             }
 
             point.barCoordinates = {
@@ -48,18 +61,56 @@ module powerbi.extensibility.visual.visualUtils {
                 y: y
             };
         });
+
+        if (axes.yIsScalar && settings.categoryAxis.axisType !== "categorical") {
+            this.recalculateHeightForContinuous(dataPoints, barHeight);
+        }
+    }
+
+    export function recalculateHeightForContinuous(dataPoints: VisualDataPoint[], barHeight: number) {
+        let minHeight: number = 1.5,
+            minDistance: number = Number.MAX_VALUE;
+
+        let dataPointsSorted: VisualDataPoint[] = dataPoints.sort((a, b) => {
+            return a.barCoordinates.y - b.barCoordinates.y;
+        });
+
+        let firstDataPoint: VisualDataPoint = dataPointsSorted[0];
+
+        for (let i = 1; i < dataPointsSorted.length; ++i) {
+            let distance: number = dataPointsSorted[i].barCoordinates.y - firstDataPoint.barCoordinates.y;
+
+            minDistance = distance < minDistance ? distance : minDistance;
+            firstDataPoint = dataPointsSorted[i];
+        }
+
+        if (minDistance < minHeight) {
+            
+        } else if (minHeight < minDistance && minDistance < barHeight) {
+            minHeight = minDistance;
+        } else {
+            minHeight = barHeight;
+        }
+
+        if (barHeight && barHeight !== minHeight) {
+            dataPointsSorted.forEach(x => {
+                x.barCoordinates.height = x.barCoordinates.height ? minHeight : 0;
+                x.barCoordinates.y = x.barCoordinates.y + barHeight / 2;
+            });
+        }
     }
 
     export function calculateLabelCoordinates(data: VisualData,
                                             settings: categoryLabelsSettings,
                                             metadata: VisualMeasureMetadata,
                                             chartWidth: number,
-                                            isLegendRendered: boolean) {
+                                            isLegendRendered: boolean,
+                                            dataPoints: VisualDataPoint[] = null) {
         if (!settings.show) {
             return;
         }
 
-        let dataPointsArray: VisualDataPoint[] = data.dataPoints;
+        let dataPointsArray: VisualDataPoint[] = dataPoints || data.dataPoints;
 
         let dataLabelFormatter: IValueFormatter = formattingUtils.createFormatter(settings.displayUnits,
                                                                         settings.precision,
@@ -171,24 +222,31 @@ module powerbi.extensibility.visual.visualUtils {
 
     const CategoryMinHeight: number = 16;
     const CategoryMaxHeight: number = 130;
-    const CategoryContinuousMinHeight: number = 1;
 
     export function calculateBarHeight(
         visualDataPoints: VisualDataPoint[],
         visualSize: ISize,
-        categories: string[],
+        categoriesCount: number,
         categoryInnerPadding: number,
-        yScale: any,
-        axisType: string): number {
+        settings: VisualSettings,
+        ): number {
 
-        let currentBarHeight = visualSize.height / categories.length;
+        let currentBarHeight = visualSize.height / categoriesCount;
         let barHeight: number = 0;
 
-        if (axisType === "categorical") {
+        if (settings.categoryAxis.axisType === "categorical") {
             let innerPadding: number = categoryInnerPadding / 100;
             barHeight = d3.min([CategoryMaxHeight, d3.max([CategoryMinHeight, currentBarHeight])]) * (1 - innerPadding);
         } else {
             let dataPoints = [...visualDataPoints];
+
+            let start = settings.categoryAxis.start,
+                end = settings.categoryAxis.end;
+
+            if (start != null || end != null) {
+                dataPoints = dataPoints.filter(x => start != null ? x.value >= start : true 
+                                                &&  end != null ? x.value <= end : true)
+            }
 
             let dataPointsCount: number = dataPoints.length;
 
@@ -234,7 +292,7 @@ module powerbi.extensibility.visual.visualUtils {
         return d3.max(heights);
     }
 
-    export function GetYAxisTitleHeight(valueSettings: valueAxisSettings): number {
+    export function GetYAxisTitleThickness(valueSettings: valueAxisSettings): number {
 
         let textPropertiesForHeight: TextProperties = {
             fontFamily: valueSettings.titleFontFamily,
@@ -244,7 +302,7 @@ module powerbi.extensibility.visual.visualUtils {
         return TextMeasurementService.estimateSvgTextHeight(textPropertiesForHeight);
     }
 
-    export function GetXAxisTitleHeight(categorySettings: categoryAxisSettings): number {
+    export function GetXAxisTitleThickness(categorySettings: categoryAxisSettings): number {
 
         let textPropertiesForHeight: TextProperties = {
             fontFamily: categorySettings.titleFontFamily,
