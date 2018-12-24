@@ -42,6 +42,7 @@ module powerbi.extensibility.visual {
 
     export class DataViewConverter<T> {
         private static Highlighted: string = "Highlighted";
+        private static Blank: string = "(Blank)"; 
         public static Convert(dataView: DataView, hostService: IVisualHost, settings: VisualSettings, legendColors: Array<string>): VisualDataPoint[] {
 
             if (this.IsAxisAndLegendSameField(dataView)) {
@@ -165,7 +166,7 @@ module powerbi.extensibility.visual {
 
                 if (value != null) {
                     data.push({
-                        category: legend,
+                        category: !legend ? this.Blank : legend,
                         series: legend,
                         valueForWidth: value >= 0 ? value : -value,
                         value: value,
@@ -185,7 +186,7 @@ module powerbi.extensibility.visual {
                         highlightTooltipItems.push(this.createTooltipData(valueMetadata, highlightValue, this.Highlighted));
 
                         data.push({
-                            category: legend,
+                            category: !legend ? this.Blank : legend,
                             series: legend,
                             valueForWidth: highlightValue >= 0 ? highlightValue : -highlightValue,
                             value: highlightValue,
@@ -251,7 +252,7 @@ module powerbi.extensibility.visual {
                         }
 
                         data.push({
-                            category: categoryValue,
+                            category: !categoryValue ? "(Blank)" : categoryValue,
                             series: legend,
                             value: value,
                             valueForWidth: value >= 0 ? value : -value,
@@ -273,7 +274,7 @@ module powerbi.extensibility.visual {
                             highlightTooltipItems.push(this.createTooltipData(valueMetadata, highlightValue, this.Highlighted));
 
                             data.push({
-                                category: categoryValue,
+                                category: !categoryValue ? "(Blank)" : categoryValue,
                                 series: legend,
                                 value: value,
                                 valueForWidth: highlightValue >= 0 ? highlightValue : -highlightValue,
@@ -340,7 +341,7 @@ module powerbi.extensibility.visual {
                         }
 
                         data.push({
-                            category: category,
+                            category: !category ? "(Blank)" : category,
                             valueForWidth: value >= 0 ? value : -value,
                             value: value,
                             shiftValue: value >= 0 ? sum : negativeSum + value,
@@ -361,7 +362,7 @@ module powerbi.extensibility.visual {
                             highlightTooltipItems.push(this.createTooltipData(valueMetadata, highlightValue, this.Highlighted));
 
                             data.push({
-                                category: category,
+                                category: !category ? "(Blank)" : category,
                                 valueForWidth: highlightValue,
                                 value: highlightValue >= 0 ? highlightValue : -highlightValue,
                                 shiftValue: value >= 0 ? sum : negativeSum + highlightValue,
@@ -439,7 +440,7 @@ module powerbi.extensibility.visual {
                     }
 
                     data.push({
-                        category: category,
+                        category: !category ? "(Blank)" : category,
                         value: value,
                         valueForWidth: value >= 0 ? value : -value,
                         shiftValue: value >= 0 ? sum : negativeSum + value,
@@ -461,7 +462,7 @@ module powerbi.extensibility.visual {
                         highlightTooltipItems.push(this.createTooltipData(valueMetadata, highlightValue, this.Highlighted));
 
                         data.push({
-                            category: category,
+                            category: !category ? "(Blank)" : category,
                             value: highlightValue,
                             valueForWidth: highlightValue >= 0 ? highlightValue : -highlightValue,
                             shiftValue: value >= 0 ? sum : negativeSum + highlightValue,
