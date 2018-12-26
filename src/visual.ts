@@ -119,7 +119,7 @@ module powerbi.extensibility.visual {
         private tooltipServiceWrapper: ITooltipServiceWrapper;
 
         private hasHighlight: boolean;
-        private isLegendNeeded: boolean;
+        public isLegendNeeded: boolean;
         private isSelectionRestored: boolean = false;
 
         private metadata: VisualMeasureMetadata;

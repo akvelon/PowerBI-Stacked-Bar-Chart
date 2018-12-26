@@ -166,7 +166,7 @@ module powerbi.extensibility.visual {
 
                 if (value != null) {
                     data.push({
-                        category: !legend ? this.Blank : legend,
+                        category: legend !== 0 && !legend ? this.Blank : legend,
                         series: legend,
                         valueForWidth: value >= 0 ? value : -value,
                         value: value,
@@ -186,7 +186,7 @@ module powerbi.extensibility.visual {
                         highlightTooltipItems.push(this.createTooltipData(valueMetadata, highlightValue, this.Highlighted));
 
                         data.push({
-                            category: !legend ? this.Blank : legend,
+                            category: legend !== 0 && !legend ? this.Blank : legend,
                             series: legend,
                             valueForWidth: highlightValue >= 0 ? highlightValue : -highlightValue,
                             value: highlightValue,
@@ -252,7 +252,7 @@ module powerbi.extensibility.visual {
                         }
 
                         data.push({
-                            category: !categoryValue ? "(Blank)" : categoryValue,
+                            category: categoryValue !== 0 && !categoryValue ? "(Blank)" : categoryValue,
                             series: legend,
                             value: value,
                             valueForWidth: value >= 0 ? value : -value,
@@ -274,7 +274,7 @@ module powerbi.extensibility.visual {
                             highlightTooltipItems.push(this.createTooltipData(valueMetadata, highlightValue, this.Highlighted));
 
                             data.push({
-                                category: !categoryValue ? "(Blank)" : categoryValue,
+                                category: categoryValue !== 0 && !categoryValue ? "(Blank)" : categoryValue,
                                 series: legend,
                                 value: value,
                                 valueForWidth: highlightValue >= 0 ? highlightValue : -highlightValue,
@@ -341,7 +341,7 @@ module powerbi.extensibility.visual {
                         }
 
                         data.push({
-                            category: !category ? "(Blank)" : category,
+                            category: category !== 0 && !category ? "(Blank)" : category,
                             valueForWidth: value >= 0 ? value : -value,
                             value: value,
                             shiftValue: value >= 0 ? sum : negativeSum + value,
@@ -362,7 +362,7 @@ module powerbi.extensibility.visual {
                             highlightTooltipItems.push(this.createTooltipData(valueMetadata, highlightValue, this.Highlighted));
 
                             data.push({
-                                category: !category ? "(Blank)" : category,
+                                category: category !== 0 && !category ? "(Blank)" : category,
                                 valueForWidth: highlightValue,
                                 value: highlightValue >= 0 ? highlightValue : -highlightValue,
                                 shiftValue: value >= 0 ? sum : negativeSum + highlightValue,
@@ -440,7 +440,7 @@ module powerbi.extensibility.visual {
                     }
 
                     data.push({
-                        category: !category ? "(Blank)" : category,
+                        category: category !== 0 && !category ? "(Blank)" : category,
                         value: value,
                         valueForWidth: value >= 0 ? value : -value,
                         shiftValue: value >= 0 ? sum : negativeSum + value,
@@ -462,7 +462,7 @@ module powerbi.extensibility.visual {
                         highlightTooltipItems.push(this.createTooltipData(valueMetadata, highlightValue, this.Highlighted));
 
                         data.push({
-                            category: !category ? "(Blank)" : category,
+                            category: category !== 0 && !category ? "(Blank)" : category,
                             value: highlightValue,
                             valueForWidth: highlightValue >= 0 ? highlightValue : -highlightValue,
                             shiftValue: value >= 0 ? sum : negativeSum + highlightValue,
