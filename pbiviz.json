@@ -2,9 +2,9 @@
   "visual": {
     "name": "stackedBarChartByAkvelon",
     "guid": "stackedBarChartByAkvelonA90827240A9942A3B5F760DFAFF0EF08",
-    "displayName": "Stacked Bar Chart by Akvelon 1.2.3",
+    "displayName": "Stacked Bar Chart by Akvelon 1.2.4",
     "visualClassName": "Visual",
-    "version": "1.2.3",
+    "version": "1.2.4",
     "description": "Stacked Bar Chart with rectangle selection support",
     "supportUrl": "http://akvelon.com/feedback",
     "gitHubUrl": ""

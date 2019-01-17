@@ -488,7 +488,7 @@ module powerbi.extensibility.visual {
             const defaultXDomain: any[] = RenderAxes.calculateValueDomain(this.allDataPoints, this.settings, true);
             const defaultYDomain: any[] = RenderAxes.calculateCategoryDomain(this.allDataPoints, this.settings, this.metadata, true);
 
-            const defaultAxes: IAxes = this.createSmallMultipleAxesByDomains(defaultYDomain, defaultXDomain, barsSectionSize, maxLabelWidth);
+            const defaultAxes: IAxes = this.createSmallMultipleAxesByDomains(defaultYDomain, defaultXDomain, barsSectionSize, maxLabelWidth, uniqueCategories.length);
 
             let xDomain: any[] = [],
                 yDomain: any[] = [];
@@ -592,7 +592,12 @@ module powerbi.extensibility.visual {
                             xDomain = dataPoints && dataPoints.length ? RenderAxes.calculateValueDomain(dataPoints, this.settings, true) : defaultXDomain;
                         }
 
-                        axes = !yIsSeparate && !xIsSeparate ? defaultAxes : this.createSmallMultipleAxesByDomains(yDomain, xDomain, barsSectionSize, maxLabelWidth);
+                        if (!yIsSeparate && !xIsSeparate ) {
+                            axes = defaultAxes;
+                        } else {
+                            let uniqueCategoriesCount: number = dataPoints.map(x => x.category).filter((v, i, a) => a.indexOf(v) === i).length;
+                            axes = this.createSmallMultipleAxesByDomains(yDomain, xDomain, barsSectionSize, maxLabelWidth, uniqueCategoriesCount);
+                        }
                     }
 
                     if (!this.data.axes) {
@@ -1086,11 +1091,12 @@ module powerbi.extensibility.visual {
             return axes;
         }
 
-        private createSmallMultipleAxesByDomains(categoryDomain: any[], valueDomain: any[], visualSize: ISize, maxYAxisLabelWidth: number): IAxes {
+        private createSmallMultipleAxesByDomains(categoryDomain: any[], valueDomain: any[], visualSize: ISize, maxYAxisLabelWidth: number, categoriesCount: number = null): IAxes {
             let axesDomains: AxesDomains = {
                 xAxisDomain: valueDomain,
                 yAxisDomain: categoryDomain
             };
+            let barHeight: number = categoriesCount ? visualSize.height / (categoriesCount > 2 ? categoriesCount + 1 : categoriesCount) : 0;
 
             let axes: IAxes = RenderAxes.createD3Axes(
                 axesDomains,
@@ -1099,7 +1105,7 @@ module powerbi.extensibility.visual {
                 this.settings,
                 this.host,
                 true,
-                null,
+                barHeight,
                 maxYAxisLabelWidth
             );
 
@@ -1127,6 +1133,7 @@ module powerbi.extensibility.visual {
         private renderAxes(maxYLabelsWidth = null): void {
             visualUtils.calculateBarCoordianatesByData(this.data, this.settings, this.BarHeight);
 
+            this.calculateBarHeight();
             RenderAxes.render(
                 this.settings,
                 this.xAxisSvgGroup,
