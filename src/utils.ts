@@ -42,7 +42,7 @@ export function calculateBarCoordianates(dataPoints: VisualDataPoint[], axes: IA
         let x: any;
 
         if (!axes.yIsScalar || isCategoricalAxisType) {
-            height = axes.y.scale.rangeBand();
+            height = axes.y.scale.bandwidth();
         } else {
             height = dataPoints.length > 2 ? barHeight * 0.8 : barHeight / 2 * 0.8;
         }

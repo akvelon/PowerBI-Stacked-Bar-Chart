@@ -27,9 +27,8 @@ import IInteractiveBehavior = interactivityBaseService.IInteractiveBehavior;
 import { RenderVisual } from "./render/renderVisual";
 import { RenderAxes } from "./render/renderAxes";
 import { axis } from "powerbi-visuals-utils-chartutils";
-import { valueType } from "powerbi-visuals-utils-typeutils";
 
-import { textMeasurementService as TextMeasurementService, interfaces, valueFormatter as ValueFormatter, valueFormatter, textMeasurementService} from "powerbi-visuals-utils-formattingutils";
+import { interfaces, valueFormatter as ValueFormatter, valueFormatter, textMeasurementService} from "powerbi-visuals-utils-formattingutils";
 import TextProperties = interfaces.TextProperties;
 import IValueFormatter = ValueFormatter.IValueFormatter;
 
@@ -51,7 +50,7 @@ import { d3Selection, d3Update } from "./utils";
 
 import "../style/visual.less";
 
-import { AxisRangeType, HorizontalPosition, LabelPosition, LayoutMode, legendSettings, smallMultipleSettings, VisualSettings } from "./settings";
+import { AxisRangeType, LabelPosition, LayoutMode, legendSettings, smallMultipleSettings, VisualSettings } from "./settings";
 import { AxesDomains, CategoryDataPoints, IAxes, IAxesSize, ISize, LegendProperties, LegendSize, SmallMultipleSizeOptions, VisualData, VisualDataPoint, VisualMeasureMetadata, VisualTranslation } from "./visualInterfaces";
 
 import { CustomLegendBehavior } from "./customLegendBehavior";
@@ -95,7 +94,6 @@ export class Visual implements IVisual {
     private mainHtmlElement: HTMLElement;
     private mainElement: d3Selection<any>;
     private mainDivElement: d3Selection<any>;
-    private scrollContainer: d3Selection<any>;
     private barGroup: d3Selection<SVGElement>;
     private chartsContainer: d3Selection<SVGElement>;        
     private axisGraphicsContext: d3Selection<SVGElement>;
@@ -270,10 +268,6 @@ export class Visual implements IVisual {
         }
 
         return true;
-    }
-
-    private isResized(type: VisualUpdateType): boolean {
-        return !(type === VisualUpdateType.Data || type === VisualUpdateType.All);
     }
 
     private calculateLabelsSize(settings: smallMultipleSettings): number {
@@ -677,13 +671,14 @@ export class Visual implements IVisual {
                     .selectAll(Selectors.BarSelect.selectorName)
                     .data(dataPoints);
 
-                barSelect.enter().append("rect")
-                    .attr("class", Selectors.BarSelect.className);
-
                 barSelect.exit()
                     .remove();
+
+                const barSelectEnter = barSelect.enter().append("rect")
+                    .attr("class", Selectors.BarSelect.className);
                 
                 barSelect
+                    .merge(barSelectEnter)
                     .attr("height", d => {
                         return d.barCoordinates.height;
                     })
@@ -696,9 +691,7 @@ export class Visual implements IVisual {
                     .attr("y", d => {
                         return d.barCoordinates.y;
                     })
-                    .attr("fill", d => d.color);
-                
-                barSelect
+                    .attr("fill", d => d.color)
                     .style("fill-opacity", (p: VisualDataPoint) => visualUtils.getFillOpacity(
                         p.selected,
                         p.highlight,
@@ -911,6 +904,7 @@ export class Visual implements IVisual {
         if (!this.optionsAreValid(options)) {
             return;
         }
+        debugger;
 
         const dataView = options && options.dataViews && options.dataViews[0];
 
@@ -1186,7 +1180,7 @@ export class Visual implements IVisual {
         );            
 
         const chartWidth: number = (<Element>this.xAxisSvgGroup.node()).getBoundingClientRect().width -
-                                    (<Element>this.xAxisSvgGroup.selectAll("text")[0][0]).getBoundingClientRect().width;
+                                    (<Element>this.xAxisSvgGroup.selectAll("text").nodes()[0]).getBoundingClientRect().width;
 
         visualUtils.calculateLabelCoordinates(
             this.data,
@@ -1307,8 +1301,8 @@ export class Visual implements IVisual {
     }
 
     private calculateOffsets(xAxisSvgGroup: d3Selection<SVGElement>, yAxisSvgGroup: d3Selection<SVGElement>) {
-        const xtickText: visualUtils.d3Group<any> = xAxisSvgGroup.selectAll("text")[0];
-        const ytickText: visualUtils.d3Group<any> = yAxisSvgGroup.selectAll("text")[0];
+        const xtickText: visualUtils.d3Group<any> = xAxisSvgGroup.selectAll("text");
+        const ytickText: visualUtils.d3Group<any> = yAxisSvgGroup.selectAll("text");
 
         const showYAxisTitle: boolean = this.settings.categoryAxis.show && this.settings.categoryAxis.showTitle;
         const showXAxisTitle: boolean = this.settings.valueAxis.show && this.settings.valueAxis.showTitle;
@@ -1354,10 +1348,6 @@ export class Visual implements IVisual {
         this.visualMargin = { top: 5, bottom: 5, left: extendedLeftMargin ? 15 : 5 , right: extendedRightMargin ? 15 : 5  };
     }
 
-    private yAxisHasRightPosition(): boolean {
-        return this.settings.categoryAxis.show && this.settings.categoryAxis.position === "right";
-    }
-
     private calculateVisualSize(legendSize: LegendSize, xAxisTitleThickness: number): void {
         const visualSize: ISize = {
             width: this.viewport.width
@@ -1397,13 +1387,10 @@ export class Visual implements IVisual {
             y: this.visualMargin.top
         };
 
-        const rightPadding = 25;
-
         /*this.chartsContainer.attr(
             "transform",
             svg.translate(this.visualTranslation.x + (yHasRightPosition ? rightPadding : 0), this.visualTranslation.y));*/
         
-        const yAxisHasRightPosition: boolean = this.yAxisHasRightPosition();
         const yHasLeftPosition: boolean = this.settings.categoryAxis.show && this.settings.categoryAxis.position === "left";
 
         const translateX: number = yHasLeftPosition ? this.axesSize.yAxisWidth + this.yTickOffset : 0;

@@ -11,8 +11,8 @@ import DataViewPropertyValue = powerbiApi.DataViewPropertyValue;
 import IViewport = powerbiApi.IViewport;
 
 import { AxesDomains, IAxes, ISize, VisualDataPoint, VisualMeasureMetadata } from "../visualInterfaces";
-import { AxisRangeType, VisualSettings, valueAxisSettings, categoryAxisSettings } from "../settings";
-import { d3Selection, d3Update, getLineStyleParam, getTitleWithUnitType } from "../utils";
+import { AxisRangeType, VisualSettings } from "../settings";
+import { d3Selection, d3Update } from "../utils";
 import { IAxisProperties } from "powerbi-visuals-utils-chartutils/lib/axis/axisInterfaces";
 
 import IMargin = axisInterfaces.IMargin;
@@ -300,14 +300,14 @@ export class RenderAxes {
         axisLabelsGroup = axisGraphicsContext.selectAll("*")
             .data(axisLabelsData);
 
-        // When a new category added, create a new SVG group for it.
-        axisLabelsGroup.enter()
-            .append("text")
-            .attr("class", Selectors.AxisLabelSelector.className);
-
         // For removed categories, remove the SVG group.
         axisLabelsGroup.exit()
             .remove();
+
+        // When a new category added, create a new SVG group for it.
+        const axisLabelsGroupEnter = axisLabelsGroup.enter()
+            .append("text")
+            .attr("class", Selectors.AxisLabelSelector.className);
 
         const xColor: string = settings.valueAxis.axisTitleColor;
         const xFontSize: number = parseInt(settings.valueAxis.titleFontSize.toString());
@@ -324,10 +324,11 @@ export class RenderAxes {
         const yAxisFontFamily: string = settings.categoryAxis.titleFontFamily;
 
         axisLabelsGroup
+            .merge(axisLabelsGroupEnter)
             .style("text-anchor", "middle")
             .text(d => d)
             .call((text: d3Selection<any>) => {
-                const textSelectionX: d3Selection<any> = select(text[0][0]);
+                const textSelectionX: d3Selection<any> = select(text.nodes()[0]);
 
                 textSelectionX
                     .attr("transform", svg.translate(
@@ -350,7 +351,7 @@ export class RenderAxes {
                     .style("font-size", xFontSizeString)
                     .style("font-family", xAxisFontFamily)
 
-                const textSelectionY: d3Selection<any> = select(text[0][1]);
+                const textSelectionY: d3Selection<any> = select(text.nodes()[1]);
 
                 textSelectionY
                     .attr("transform", showY1OnRight ? RenderAxes.YAxisLabelTransformRotate : RenderAxes.YAxisLabelTransformRotate)

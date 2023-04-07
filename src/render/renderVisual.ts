@@ -56,35 +56,41 @@ export class RenderVisual {
         settings: VisualSettings) {
         // Select all bar groups in our chart and bind them to our categories.
         // Each group will contain a set of bars, one for each of the values in category.
-        const barGroupSelect = visualSvgGroup.selectAll(Selectors.BarGroupSelect.selectorName)
+        let barGroupSelect = visualSvgGroup.selectAll(Selectors.BarGroupSelect.selectorName)
             .data([data.dataPoints]);
-
-        // When a new category added, create a new SVG group for it.
-        barGroupSelect.enter()
-            .append("g")
-            .attr("class", Selectors.BarGroupSelect.className);
 
         // For removed categories, remove the SVG group.
         barGroupSelect.exit()
             .remove();
 
+        // When a new category added, create a new SVG group for it.
+        const barGroupSelectEnter = barGroupSelect.enter()
+            .append("g")
+            .attr("class", Selectors.BarGroupSelect.className);
+
+        barGroupSelect = barGroupSelect.merge(barGroupSelectEnter);
         // Update the position of existing SVG groups.
         // barGroupSelect.attr("transform", d => `translate(0, ${data.axes.y(d.category)})`);
 
         // Now we bind each SVG group to the values in corresponding category.
         // To keep the length of the values array, we transform each value into object,
         // that contains both value and total count of all values in this category.
-        const barSelect = barGroupSelect
+        let barSelect = barGroupSelect
             .selectAll(Selectors.BarSelect.selectorName)
             .data(data.dataPoints);
-
-        // For each new value, we create a new rectange.
-        barSelect.enter().append("rect")
-            .attr("class", Selectors.BarSelect.className);
 
         // Remove rectangles, that no longer have matching values.
         barSelect.exit()
             .remove();
+
+        // For each new value, we create a new rectange.
+        const barSelectEnter = barSelect.enter().append("rect")
+            .attr("class", Selectors.BarSelect.className);
+
+        barSelect = barSelect.merge(barSelectEnter);
+
+        const interactivityService = visualInteractivityService,
+            hasSelection: boolean = interactivityService.hasSelection();
 
         // Set the size and position of existing rectangles.
         barSelect
@@ -100,12 +106,7 @@ export class RenderVisual {
             .attr("y", d => {
                 return d.barCoordinates.y;
             })
-            .attr("fill", d => d.color);
-
-        const interactivityService = visualInteractivityService,
-            hasSelection: boolean = interactivityService.hasSelection();
-
-        barSelect
+            .attr("fill", d => d.color)
             .style("fill-opacity", (p: VisualDataPoint) => visualUtils.getFillOpacity(
                 p.selected,
                 p.highlight,
@@ -165,39 +166,38 @@ export class RenderVisual {
             return;
         }
 
-        const dataPointsArray: VisualDataPoint[] = this.filterData(dataPoints || data.dataPoints),
-            backgroundSelection: d3Update<VisualDataPoint> = dataLabelsBackgroundContext
+        const dataPointsArray: VisualDataPoint[] = this.filterData(dataPoints || data.dataPoints);
+        const backgroundSelection: d3Update<VisualDataPoint> = dataLabelsBackgroundContext
                     .selectAll(RenderVisual.Label.selectorName)
                     .data(dataPointsArray);
 
         backgroundSelection
+            .exit()
+            .remove();
+
+        const backgroundSelectionEnter = backgroundSelection
             .enter()
             .append("svg:rect");
 
         backgroundSelection
-                .attr("height", d => {
-                    return d.labelCoordinates.height + DataLabelHelper.labelBackgroundHeightPadding;
-                })
-                .attr("width", d => {
-                    return d.labelCoordinates.width + DataLabelHelper.labelBackgroundWidthPadding;
-                })
-                .attr("x", d => {
-                    return d.labelCoordinates.x - DataLabelHelper.labelBackgroundXShift;
-                })
-                .attr("y", d => {
-                    return d.labelCoordinates.y - d.labelCoordinates.height - DataLabelHelper.labelBackgroundYShift;
-                })
-                .attr("rx", 4)
-                .attr("ry", 4)
-                .attr("fill", settings.categoryLabels.backgroundColor);
-
-        backgroundSelection
+            .merge(backgroundSelectionEnter)
+            .attr("height", d => {
+                return d.labelCoordinates.height + DataLabelHelper.labelBackgroundHeightPadding;
+            })
+            .attr("width", d => {
+                return d.labelCoordinates.width + DataLabelHelper.labelBackgroundWidthPadding;
+            })
+            .attr("x", d => {
+                return d.labelCoordinates.x - DataLabelHelper.labelBackgroundXShift;
+            })
+            .attr("y", d => {
+                return d.labelCoordinates.y - d.labelCoordinates.height - DataLabelHelper.labelBackgroundYShift;
+            })
+            .attr("rx", 4)
+            .attr("ry", 4)
+            .attr("fill", settings.categoryLabels.backgroundColor)
             .style("fill-opacity", (100 - settings.categoryLabels.transparency) / 100)
             .style("pointer-events", "none");
-
-        backgroundSelection
-            .exit()
-            .remove();
     }
 
     public static renderDataLabels(
@@ -215,10 +215,14 @@ export class RenderVisual {
             return;
         }
 
-        const dataPointsArray: VisualDataPoint[] = this.filterData(dataPoints || data.dataPoints),
-            labelSelection: d3Update<VisualDataPoint> = dataLabelsContext
+        const dataPointsArray: VisualDataPoint[] = this.filterData(dataPoints || data.dataPoints);
+        const labelSelection = dataLabelsContext
                     .selectAll(RenderVisual.Label.selectorName)
                     .data(dataPointsArray);
+
+        labelSelection
+            .exit()
+            .remove();
 
         const dataLabelFormatter: IValueFormatter =
                 formattingUtils.createFormatter(labelSettings.displayUnits,
@@ -226,28 +230,23 @@ export class RenderVisual {
                                                 metadata.cols.value,
                                                 formattingUtils.getValueForFormatter(data));
 
-        labelSelection
+        const fontSizeInPx: string = PixelConverter.fromPoint(labelSettings.fontSize);
+        const fontFamily: string = labelSettings.fontFamily ? labelSettings.fontFamily : dataLabelUtils.LabelTextProperties.fontFamily;
+                                        
+        const labelSelectionEnter = labelSelection
             .enter()
             .append("svg:text");
 
-        const fontSizeInPx: string = PixelConverter.fromPoint(labelSettings.fontSize);
-        const fontFamily: string = labelSettings.fontFamily ? labelSettings.fontFamily : dataLabelUtils.LabelTextProperties.fontFamily;
-
         labelSelection
+            .merge(labelSelectionEnter)
             .attr("transform", (p: VisualDataPoint) => {
                 return svg.translate(p.labelCoordinates.x, p.labelCoordinates.y);
-            });
-
-        labelSelection
+            })
             .style("fill", labelSettings.color)
             .style("font-size", fontSizeInPx)
             .style("font-family", fontFamily)
             .style("pointer-events", "none")
             .text((p: VisualDataPoint) => dataLabelFormatter.format(p.value));
-
-        labelSelection
-            .exit()
-            .remove();
     }
 
     private static filterData(dataPoints: VisualDataPoint[]): VisualDataPoint[] {
@@ -381,7 +380,7 @@ export class RenderVisual {
                 return null;
             })
             .call((text: d3Selection<any>) => {
-                const textSelectionX: d3Selection<any> = d3.select(text[0][0]);
+                const textSelectionX: d3Selection<any> = d3.select(text.nodes()[0]);
                 const x = leftSpace + chartSize.width / 2;
 
                 textSelectionX.attr(
@@ -434,7 +433,7 @@ export class RenderVisual {
                 })
                 .call((text: d3Selection<any>) => {
                     for (let j = 0; j < uniqueColumns.length; ++j) { 
-                        const textSelectionX: d3Selection<any> = d3.select(text[0][j]);
+                        const textSelectionX: d3Selection<any> = d3.select(text.nodes()[j]);
                         const x = leftSpace + j * chartSize.width + chartSize.width / 2 + this.gapBetweenCharts * j;
 
                         textSelectionX.attr("transform", svg.translate(x, topSpace / 2));
@@ -475,7 +474,7 @@ export class RenderVisual {
             })
             .call((text: d3Selection<any>) => {
                 for (let i = 0; i < uniqueRows.length; ++i) { 
-                    const textSelectionX: d3Selection<any> = d3.select(text[0][i]);
+                    const textSelectionX: d3Selection<any> = d3.select(text.nodes()[i]);
                     let y = 0;
 
                     if (settings.layoutMode === LayoutMode.Flow) {
@@ -508,7 +507,7 @@ export class RenderVisual {
 
         const y = axes.y.scale(axes.y.dataDomain[0]);
 
-        if (line[0][0]) {
+        if (line.nodes()[0]) {
             element.selectAll("line").remove();
         }
 
@@ -547,7 +546,7 @@ export class RenderVisual {
 
         let label: d3Selection<any> = element.select(".const-label");
 
-        if (label[0][0]) {
+        if (label.nodes()[0]) {
             element.selectAll("text").remove();
         }
 
